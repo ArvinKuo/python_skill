@@ -1,0 +1,41 @@
+MODEL REPORT
+------------
+Train/test split:
+  Settings: test_size=0.2, random_state=42, stratify=Churn (same churn share in both sets)
+  Training set: 5,634 customers, 1,495 churned (26.54%)
+  Test set: 1,409 customers, 374 churned (26.54%)
+
+Pipeline:
+  1. preprocessor: StandardScaler on tenure, MonthlyCharges, TotalCharges (learned from the training set only); 38 encoded 0/1 columns passed through unchanged
+  2. classifier: LogisticRegression(solver=lbfgs, C=1.0, max_iter=1000, class_weight=None) - converged after 40 iterations
+
+Scaling values learned from the training set:
+  tenure          mean     32.49   standard deviation     24.57
+  MonthlyCharges  mean     64.93   standard deviation     30.14
+  TotalCharges    mean   2299.33   standard deviation   2279.00
+
+Intercept: -0.785
+Coefficients are associations, not causes. Numeric features: change per 1 standard deviation;
+0/1 features: change from 0 to 1. Odds ratio > 1 = higher predicted churn odds, < 1 = lower.
+
+Top 8 towards churn:
+  Feature                                  Coefficient  Odds ratio
+  InternetService_Fiber optic                   +0.598        1.82
+  Contract_Month-to-month                       +0.541        1.72
+  TotalCharges                                  +0.515        1.67
+  PaperlessBilling                              +0.370        1.45
+  PaymentMethod_Electronic check                +0.171        1.19
+  StreamingTV_Yes                               +0.165        1.18
+  StreamingMovies_Yes                           +0.164        1.18
+  SeniorCitizen                                 +0.144        1.15
+
+Top 8 towards staying:
+  Feature                                  Coefficient  Odds ratio
+  tenure                                        -1.239        0.29
+  Contract_Two year                             -0.806        0.45
+  InternetService_DSL                           -0.686        0.50
+  MonthlyCharges                                -0.585        0.56
+  OnlineBackup_No internet service              -0.336        0.71
+  OnlineSecurity_No internet service            -0.336        0.71
+  StreamingTV_No internet service               -0.336        0.71
+  TechSupport_No internet service               -0.336        0.71
