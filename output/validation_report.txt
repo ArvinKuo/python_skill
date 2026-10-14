@@ -1,0 +1,42 @@
+DATA VALIDATION REPORT
+----------------------
+Dataset: data/raw/Telco-Customer-Churn.csv
+Rows: 7043
+Columns: 21
+Duplicate customer IDs: None found - every customer appears once
+Missing-value fields: TotalCharges (11 empty)
+Invalid target values: None found - Churn only contains "Yes" / "No"
+TotalCharges conversion issues: 11 value(s) cannot be read as a number; all 11 are blank and all 11 belong to brand-new customers (tenure = 0) who have not been billed yet
+Negative numeric values: None found
+Tenure outside 0-120 months: None found (observed 0-72)
+Unexpected categorical values: None found
+
+Column data types:
+  customerID        text
+  gender            text
+  SeniorCitizen     whole number
+  Partner           text
+  Dependents        text
+  tenure            whole number
+  PhoneService      text
+  MultipleLines     text
+  InternetService   text
+  OnlineSecurity    text
+  OnlineBackup      text
+  DeviceProtection  text
+  TechSupport       text
+  StreamingTV       text
+  StreamingMovies   text
+  Contract          text
+  PaperlessBilling  text
+  PaymentMethod     text
+  MonthlyCharges    decimal number
+  TotalCharges      text  <-- expected decimal number
+  Churn             text
+
+Items to review:
+  1. TotalCharges has 11 empty value(s).
+  2. TotalCharges is stored as text but should be a decimal number.
+  3. 11 TotalCharges value(s) cannot be read as a number.
+
+Overall status: REVIEW

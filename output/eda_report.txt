@@ -1,0 +1,50 @@
+EXPLORATORY ANALYSIS REPORT
+---------------------------
+Dataset: data/raw/Telco-Customer-Churn.csv
+Churn rate = churned customers / customers in the group. These figures show associations, not causes.
+
+1. What percentage of customers churned?
+  1,869 of 7,043 customers churned = 26.5%
+
+2. How does churn differ by Contract type?
+  Group           Customers  Churned  Churn rate
+  Month-to-month      3,875    1,655       42.7%
+  One year            1,473      166       11.3%
+  Two year            1,695       48        2.8%
+  Highest: Month-to-month (42.7%); lowest: Two year (2.8%); a gap of 39.9 percentage points (about 15.1x).
+
+3. How does churn differ by InternetService?
+  Group        Customers  Churned  Churn rate
+  Fiber optic      3,096    1,297       41.9%
+  DSL              2,421      459       19.0%
+  No               1,526      113        7.4%
+  Highest: Fiber optic (41.9%); lowest: No (7.4%); a gap of 34.5 percentage points (about 5.7x).
+
+4. How does churn differ for different tenure ranges?
+  Group         Customers  Churned  Churn rate
+  0-12 months       2,186    1,037       47.4%
+  13-24 months      1,024      294       28.7%
+  25-48 months      1,594      325       20.4%
+  49+ months        2,239      213        9.5%
+  Highest: 0-12 months (47.4%); lowest: 49+ months (9.5%); a gap of 37.9 percentage points (about 5.0x).
+
+5. How does churn differ by PaymentMethod?
+  Group                      Customers  Churned  Churn rate
+  Electronic check               2,365    1,071       45.3%
+  Mailed check                   1,612      308       19.1%
+  Bank transfer (automatic)      1,544      258       16.7%
+  Credit card (automatic)        1,522      232       15.2%
+  Highest: Electronic check (45.3%); lowest: Credit card (automatic) (15.2%); a gap of 30.0 percentage points (about 3.0x).
+
+6. How do average MonthlyCharges compare between churned and non-churned customers?
+  Group     Customers   Average    Median
+  Churned       1,869     74.44     79.65
+  Stayed        5,174     61.27     64.43
+  On average, churned customers were charged 13.18 more per month than customers who stayed.
+
+7. Is there a visible relationship between TechSupport and churn?
+  Group                Customers  Churned  Churn rate
+  No                       3,473    1,446       41.6%
+  Yes                      2,044      310       15.2%
+  No internet service      1,526      113        7.4%
+  Highest: No (41.6%); lowest: No internet service (7.4%); a gap of 34.2 percentage points (about 5.6x).
