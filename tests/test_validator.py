@@ -1,40 +1,14 @@
 import pandas as pd
 import pytest
 
-from src.validation import EXPECTED_CATEGORIES, format_report, validate
+from src.validator import EXPECTED_CATEGORIES, format_report, validate
 
 
-def _row(customer_id: str, **overrides) -> dict:
-    row = {
-        "customerID": customer_id,
-        "gender": "Female",
-        "SeniorCitizen": 0,
-        "Partner": "Yes",
-        "Dependents": "No",
-        "tenure": 12,
-        "PhoneService": "Yes",
-        "MultipleLines": "No",
-        "InternetService": "DSL",
-        "OnlineSecurity": "No",
-        "OnlineBackup": "Yes",
-        "DeviceProtection": "No",
-        "TechSupport": "No",
-        "StreamingTV": "No",
-        "StreamingMovies": "No",
-        "Contract": "Month-to-month",
-        "PaperlessBilling": "Yes",
-        "PaymentMethod": "Electronic check",
-        "MonthlyCharges": 29.85,
-        "TotalCharges": 358.2,
-        "Churn": "No",
-    }
-    row.update(overrides)
-    return row
 
 
 @pytest.fixture
-def clean_df() -> pd.DataFrame:
-    return pd.DataFrame([_row("A"), _row("B", Churn="Yes", tenure=0, TotalCharges=0.0)])
+def clean_df(make_row) -> pd.DataFrame:
+    return pd.DataFrame([make_row("A"), make_row("B", Churn="Yes", tenure=0, TotalCharges=0.0)])
 
 
 def test_clean_data_passes(clean_df):
@@ -57,8 +31,8 @@ def test_duplicate_customer_ids_detected(clean_df):
     assert result.status == "REVIEW"
 
 
-def test_blank_total_charges_reported_as_missing_and_unconvertible():
-    df = pd.DataFrame([_row("A", TotalCharges="10.5"), _row("B", tenure=0, TotalCharges=" ")])
+def test_blank_total_charges_reported_as_missing_and_unconvertible(make_row):
+    df = pd.DataFrame([make_row("A", TotalCharges="10.5"), make_row("B", tenure=0, TotalCharges=" ")])
 
     result = validate(df)
 
@@ -70,8 +44,8 @@ def test_blank_total_charges_reported_as_missing_and_unconvertible():
     assert "TotalCharges conversion issues: 1 value(s)" in format_report(result)
 
 
-def test_non_numeric_total_charges_counted():
-    df = pd.DataFrame([_row("A", TotalCharges="10.5"), _row("B", TotalCharges="abc")])
+def test_non_numeric_total_charges_counted(make_row):
+    df = pd.DataFrame([make_row("A", TotalCharges="10.5"), make_row("B", TotalCharges="abc")])
 
     result = validate(df)
 
@@ -79,12 +53,12 @@ def test_non_numeric_total_charges_counted():
     assert result.total_charges_blank == 0
 
 
-def test_tenure_out_of_range_and_negative_values():
+def test_tenure_out_of_range_and_negative_values(make_row):
     df = pd.DataFrame(
         [
-            _row("A", tenure=-1),
-            _row("B", tenure=500),
-            _row("C", MonthlyCharges=-5.0, TotalCharges=-5.0),
+            make_row("A", tenure=-1),
+            make_row("B", tenure=500),
+            make_row("C", MonthlyCharges=-5.0, TotalCharges=-5.0),
         ]
     )
 
@@ -95,16 +69,21 @@ def test_tenure_out_of_range_and_negative_values():
     assert result.status == "REVIEW"
 
 
-def test_invalid_target_labels_detected():
-    df = pd.DataFrame([_row("A", Churn="yes"), _row("B", Churn=None), _row("C")])
+def test_invalid_target_labels_detected(make_row):
+    df = pd.DataFrame([make_row("A", Churn="yes"), make_row("B", Churn=None), make_row("C")])
 
     result = validate(df)
 
     assert result.invalid_target == {"yes": 1, "(empty)": 1}
 
 
-def test_unexpected_categorical_values_detected():
-    df = pd.DataFrame([_row("A", gender="F"), _row("B", Contract="Three year"), _row("C")])
+def test_raw_churn_contains_only_expected_labels_before_encoding(raw_df):
+    assert set(raw_df["Churn"].unique()) == {"Yes", "No"}
+    assert validate(raw_df).invalid_target == {}
+
+
+def test_unexpected_categorical_values_detected(make_row):
+    df = pd.DataFrame([make_row("A", gender="F"), make_row("B", Contract="Three year"), make_row("C")])
 
     result = validate(df)
 
@@ -123,8 +102,8 @@ def test_missing_columns_flagged(clean_df):
     assert "TotalCharges conversion issues: not checked" in report
 
 
-def test_raw_dataset_matches_expected_categories():
-    df = pd.read_csv("data/raw/Telco-Customer-Churn.csv")
+def test_raw_dataset_matches_expected_categories(raw_df):
+    df = raw_df
 
     result = validate(df)
 

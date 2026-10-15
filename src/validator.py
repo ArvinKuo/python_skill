@@ -1,7 +1,9 @@
-"""Data validation for the Telco Customer Churn dataset.
+"""Validate the raw Telco Customer Churn data.
 
-`validate()` inspects a raw DataFrame and returns a `ValidationResult`;
-`format_report()` turns that result into a plain-language report.
+`validate()` checks required columns, missing values, duplicate IDs, data
+types, value ranges, target labels and category values, and returns a
+`ValidationResult`. `format_report()` turns it into a plain-language report.
+Nothing is changed here; problems are only reported.
 """
 
 from __future__ import annotations
@@ -11,8 +13,8 @@ from dataclasses import dataclass, field
 import pandas as pd
 from pandas.api import types as ptypes
 
-ID_COLUMN = "customerID"
-TARGET_COLUMN = "Churn"
+from src.data_loader import ID_COLUMN, REQUIRED_COLUMNS, TARGET_COLUMN
+
 EXPECTED_TARGET_LABELS = {"Yes", "No"}
 NON_NEGATIVE_COLUMNS = ["tenure", "MonthlyCharges", "TotalCharges"]
 TENURE_RANGE = (0, 120)  # months; 10 years is a generous upper bound
@@ -142,8 +144,8 @@ def _type_matches(actual: str, expected: str) -> bool:
 
 def validate(df: pd.DataFrame) -> ValidationResult:
     result = ValidationResult(rows=len(df), columns=df.shape[1])
-    result.missing_columns = [c for c in EXPECTED_TYPES if c not in df.columns]
-    result.extra_columns = [c for c in df.columns if c not in EXPECTED_TYPES]
+    result.missing_columns = [c for c in REQUIRED_COLUMNS if c not in df.columns]
+    result.extra_columns = [c for c in df.columns if c not in REQUIRED_COLUMNS]
 
     for col in df.columns:
         actual = _describe_type(df[col])

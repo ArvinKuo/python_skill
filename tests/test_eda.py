@@ -96,8 +96,8 @@ def test_chart_is_saved(small_df, tmp_path):
     assert path.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
 
 
-def test_raw_dataset_key_figures():
-    result = analyze(pd.read_csv("data/raw/Telco-Customer-Churn.csv"))
+def test_raw_dataset_key_figures(raw_df):
+    result = analyze(raw_df)
 
     assert (result.customers, result.churned) == (7043, 1869)
     assert result.churn_rate == pytest.approx(0.2654, abs=1e-4)
