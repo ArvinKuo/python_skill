@@ -14,8 +14,8 @@ import numpy as np
 import pandas as pd
 from matplotlib.figure import Figure
 
-from src.cleaning import TARGET_MAPPING
-from src.validation import TARGET_COLUMN
+from src.data_loader import TARGET_COLUMN
+from src.preprocessing import encode_target
 
 CONTRACT_ORDER = ["Month-to-month", "One year", "Two year"]
 TENURE_BINS = [0, 12, 24, 48, np.inf]
@@ -33,14 +33,6 @@ class EdaResult:
     monthly_charges: pd.DataFrame
 
 
-def _binary_target(df: pd.DataFrame) -> pd.Series:
-    target = df[TARGET_COLUMN].map(lambda v: v.strip() if isinstance(v, str) else v)
-    target = target.map(TARGET_MAPPING)
-    if target.isna().any():
-        raise ValueError(f"{TARGET_COLUMN} must contain only 'Yes' or 'No' for the analysis.")
-    return target.astype(int)
-
-
 def churn_rate_by(groups: pd.Series, churn: pd.Series) -> pd.DataFrame:
     """Customers, churned customers and churn rate (0-1) for each group."""
     table = churn.groupby(groups, observed=True).agg(customers="size", churned="sum", churn_rate="mean")
@@ -53,7 +45,7 @@ def tenure_bands(tenure: pd.Series) -> pd.Series:
 
 
 def analyze(df: pd.DataFrame) -> EdaResult:
-    churn = _binary_target(df)
+    churn = encode_target(df[TARGET_COLUMN])
 
     by_group = {}
     for col in GROUP_COLUMNS:

@@ -20,7 +20,7 @@ from sklearn.metrics import (
     recall_score,
 )
 
-from src.validation import ID_COLUMN
+from src.data_loader import ID_COLUMN
 
 PREDICTION_COLUMNS = [ID_COLUMN, "actual_churn", "predicted_churn", "churn_probability", "outcome"]
 

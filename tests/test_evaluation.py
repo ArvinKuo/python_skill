@@ -2,7 +2,6 @@ import pandas as pd
 import pytest
 from sklearn.metrics import f1_score
 
-from src.cleaning import clean
 from src.evaluation import (
     PREDICTION_COLUMNS,
     build_predictions,
@@ -10,29 +9,14 @@ from src.evaluation import (
     format_evaluation_report,
     save_predictions,
 )
-from src.features import get_features_and_target
-from src.model import predict_churn, split_data, train_model
 
 
 @pytest.fixture(scope="module")
-def split():
-    return split_data(
-        get_features_and_target(clean(pd.read_csv("data/raw/Telco-Customer-Churn.csv")))
-    )
+def predictions(split, holdout_predictions):
+    return build_predictions(split.ids_test, split.y_test, holdout_predictions)
 
 
-@pytest.fixture(scope="module")
-def test_predictions(split):
-    model = train_model(split.X_train, split.y_train)
-    return predict_churn(model, split.X_test)
-
-
-@pytest.fixture(scope="module")
-def predictions(split, test_predictions):
-    return build_predictions(split.ids_test, split.y_test, test_predictions)
-
-
-# --- Task 9: evaluation ------------------------------------------------------
+# --- Metrics and confusion matrix ------------------------------------------------------
 
 
 def test_metrics_on_known_example():
@@ -58,36 +42,36 @@ def test_no_predicted_churners_does_not_crash():
     assert result.fn == 1
 
 
-def test_metrics_follow_from_confusion_matrix(split, test_predictions):
-    result = evaluate(split.y_test, test_predictions["predicted_churn"])
+def test_metrics_follow_from_confusion_matrix(split, holdout_predictions):
+    result = evaluate(split.y_test, holdout_predictions["predicted_churn"])
 
     assert result.total == len(split.y_test) == 1409
     assert result.actual_churners == int(split.y_test.sum()) == 374
     assert result.accuracy == pytest.approx((result.tp + result.tn) / result.total)
     assert result.precision == pytest.approx(result.tp / (result.tp + result.fp))
     assert result.recall == pytest.approx(result.tp / (result.tp + result.fn))
-    assert result.f1 == pytest.approx(f1_score(split.y_test, test_predictions["predicted_churn"]))
+    assert result.f1 == pytest.approx(f1_score(split.y_test, holdout_predictions["predicted_churn"]))
 
 
-def test_model_beats_always_stay_baseline(split, test_predictions):
-    result = evaluate(split.y_test, test_predictions["predicted_churn"])
+def test_model_beats_always_stay_baseline(split, holdout_predictions):
+    result = evaluate(split.y_test, holdout_predictions["predicted_churn"])
 
     assert result.accuracy > result.baseline_accuracy
     assert result.recall > 0
 
 
-def test_report_contains_table_and_confusion_matrix(split, test_predictions):
-    report = format_evaluation_report(evaluate(split.y_test, test_predictions["predicted_churn"]))
+def test_report_contains_table_and_confusion_matrix(split, holdout_predictions):
+    report = format_evaluation_report(evaluate(split.y_test, holdout_predictions["predicted_churn"]))
 
     for label in ["Accuracy", "Precision", "Recall", "F1 Score", "TN =", "FP =", "FN =", "TP ="]:
         assert label in report
     assert "False negatives" in report
 
 
-# --- Task 10: predictions.csv -------------------------------------------------
+# --- predictions.csv -------------------------------------------------
 
 
-def test_predictions_have_required_columns(predictions):
+def test_prediction_output_has_required_columns(predictions):
     assert list(predictions.columns) == PREDICTION_COLUMNS
     assert len(predictions) == 1409
     assert predictions["customerID"].is_unique
@@ -117,8 +101,8 @@ def test_outcome_labels(predictions):
         assert (rows["outcome"] == label).all()
 
 
-def test_outcome_counts_match_confusion_matrix(predictions, split, test_predictions):
-    result = evaluate(split.y_test, test_predictions["predicted_churn"])
+def test_outcome_counts_match_confusion_matrix(predictions, split, holdout_predictions):
+    result = evaluate(split.y_test, holdout_predictions["predicted_churn"])
     counts = predictions["outcome"].value_counts()
 
     assert counts.get("TP", 0) == result.tp
@@ -127,9 +111,9 @@ def test_outcome_counts_match_confusion_matrix(predictions, split, test_predicti
     assert counts.get("FN", 0) == result.fn
 
 
-def test_misaligned_inputs_rejected(split, test_predictions):
+def test_misaligned_inputs_rejected(split, holdout_predictions):
     with pytest.raises(ValueError, match="same rows"):
-        build_predictions(split.ids_test, split.y_test, test_predictions.iloc[::-1])
+        build_predictions(split.ids_test, split.y_test, holdout_predictions.iloc[::-1])
 
 
 def test_saved_csv_round_trips(predictions, tmp_path):

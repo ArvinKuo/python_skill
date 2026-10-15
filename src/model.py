@@ -1,10 +1,9 @@
-"""Task 7 (train/test split) and Task 8 (Logistic Regression pipeline).
+"""Build, train and use the churn classifier.
 
-`split_data()` creates a reproducible, stratified split of X, y and the
-customer IDs. `build_model()` returns an unfitted scikit-learn Pipeline:
+`build_model()` returns an unfitted scikit-learn Pipeline:
 
-    preprocessor  ColumnTransformer: StandardScaler on the 3 numeric columns,
-                  the 38 already-encoded 0/1 columns pass through unchanged
+    preprocessor  preprocessing.build_preprocessor(): StandardScaler on the 3
+                  numeric columns; the 38 encoded 0/1 columns pass through
     classifier    LogisticRegression
 
 Fitting the pipeline learns the scaler's mean/standard deviation from the
@@ -15,84 +14,22 @@ influences any preprocessing step.
 from __future__ import annotations
 
 import warnings
-from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
-from sklearn.compose import ColumnTransformer
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
 
-from src.cleaning import NUMERIC_COLUMNS
-from src.features import FeatureError, ModelData, validate_features
+from src.preprocessing import NUMERIC_COLUMNS, DataSplit, build_preprocessor, validate_features
 
-TEST_SIZE = 0.20
-RANDOM_STATE = 42
 MAX_ITER = 1000
-SCALED_COLUMNS = list(NUMERIC_COLUMNS)
-
-
-@dataclass
-class DataSplit:
-    X_train: pd.DataFrame
-    X_test: pd.DataFrame
-    y_train: pd.Series
-    y_test: pd.Series
-    ids_train: pd.Series
-    ids_test: pd.Series
-    test_size: float
-    random_state: int
-
-    def summary_lines(self) -> list[str]:
-        lines = [
-            f"Settings: test_size={self.test_size}, random_state={self.random_state}, "
-            "stratify=Churn (same churn share in both sets)"
-        ]
-        for name, y in (("Training set", self.y_train), ("Test set", self.y_test)):
-            lines.append(
-                f"{name}: {len(y):,} customers, {int(y.sum()):,} churned ({y.mean() * 100:.2f}%)"
-            )
-        return lines
-
-
-def split_data(
-    data: ModelData, test_size: float = TEST_SIZE, random_state: int = RANDOM_STATE
-) -> DataSplit:
-    """Stratified, reproducible split; customer IDs are split together with X and y."""
-    if data.y is None:
-        raise FeatureError("A target (Churn) is required to split data for training.")
-    X_train, X_test, y_train, y_test, ids_train, ids_test = train_test_split(
-        data.X,
-        data.y,
-        data.customer_ids,
-        test_size=test_size,
-        random_state=random_state,
-        stratify=data.y,
-    )
-    return DataSplit(
-        X_train=X_train,
-        X_test=X_test,
-        y_train=y_train,
-        y_test=y_test,
-        ids_train=ids_train,
-        ids_test=ids_test,
-        test_size=test_size,
-        random_state=random_state,
-    )
 
 
 def build_model() -> Pipeline:
-    preprocessor = ColumnTransformer(
-        transformers=[("scale_numeric", StandardScaler(), SCALED_COLUMNS)],
-        remainder="passthrough",
-        verbose_feature_names_out=False,
-    )
     return Pipeline(
         [
-            ("preprocessor", preprocessor),
+            ("preprocessor", build_preprocessor()),
             ("classifier", LogisticRegression(max_iter=MAX_ITER)),
         ]
     )
@@ -135,15 +72,15 @@ def format_model_report(split: DataSplit, model: Pipeline, top_n: int = 8) -> st
     lines += [
         "",
         "Pipeline:",
-        f"  1. preprocessor: StandardScaler on {', '.join(SCALED_COLUMNS)} "
-        f"(learned from the training set only); {len(split.X_train.columns) - len(SCALED_COLUMNS)} "
+        f"  1. preprocessor: StandardScaler on {', '.join(NUMERIC_COLUMNS)} "
+        f"(learned from the training set only); {len(split.X_train.columns) - len(NUMERIC_COLUMNS)} "
         "encoded 0/1 columns passed through unchanged",
         f"  2. classifier: LogisticRegression(solver={clf.solver}, C={clf.C}, max_iter={clf.max_iter}, "
         f"class_weight={clf.class_weight}) - converged after {int(clf.n_iter_[0])} iterations",
         "",
         "Scaling values learned from the training set:",
     ]
-    for col, mean, std in zip(SCALED_COLUMNS, scaler.mean_, scaler.scale_):
+    for col, mean, std in zip(NUMERIC_COLUMNS, scaler.mean_, scaler.scale_):
         lines.append(f"  {col:<15} mean {mean:>9.2f}   standard deviation {std:>9.2f}")
 
     coef = coefficient_table(model)
